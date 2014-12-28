@@ -64,7 +64,7 @@ def main():
                 print('PUTVAL "%s/lvmcache-%s/df_complex-%s" interval=%s N:%s' %
                       (hostname, data['device'], c, interval, calculate_size(data, c)))
             for c in ['read_hits', 'read_misses', 'write_hits', 'write_misses', 'demotions', 'promotions']:
-                print('PUTVAL "%s/lvmcache-%s/requests-%s" interval=%s N:%s' %
+                print('PUTVAL "%s/lvmcache-%s/cache_result-%s" interval=%s N:%s' %
                       (hostname, data['device'], c, interval, data[c]))
         sys.stdout.flush()
         time.sleep(interval)
