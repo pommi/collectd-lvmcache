@@ -1,0 +1,74 @@
+#!/usr/bin/env python
+
+import os
+import sys
+import time
+import socket
+
+hostname = os.environ['COLLECTD_HOSTNAME'] if 'COLLECTD_HOSTNAME' in os.environ else socket.getfqdn()
+interval = float(os.environ['COLLECTD_INTERVAL']) if 'COLLECTD_INTERVAL' in os.environ else 1
+
+
+def parse_dmsetup_status(line):
+    value = line.split()
+    status = {
+        'device': value[0][:-1],
+        'length': int(value[2]),
+        'target': value[3],
+        'metadata_blocksize': int(value[4]),
+        'metadata_used': int(value[5].split('/')[0]),
+        'metadata_total': int(value[5].split('/')[1]),
+        'cache_blocksize': int(value[6]),
+        'cache_used': int(value[7].split('/')[0]),
+        'cache_total': int(value[7].split('/')[1]),
+        'read_hits': int(value[8]),
+        'read_misses': int(value[9]),
+        'write_hits': int(value[10]),
+        'write_misses': int(value[11]),
+        'demotions': int(value[12]),
+        'promotions': int(value[13]),
+        'dirty': int(value[14]),
+        'blocksize': 512,
+    }
+    return status
+
+
+def calculate_size(data, key):
+    if key == 'metadata_free':
+        value = data['metadata_total']-data['metadata_used']
+    elif key == 'cache_free':
+        value = data['cache_total']-data['cache_used']
+    else:
+        value = data[key]
+
+    if key in ['metadata_free', 'metadata_used']:
+        value = value * data['blocksize'] * data['metadata_blocksize']
+    else:
+        value = value * data['blocksize'] * data['cache_blocksize']
+    return value
+
+
+def main():
+    if not os.path.exists("/sbin/dmsetup"):
+        print "/sbin/dmsetup doesn't exist"
+        sys.exit(1)
+
+    while True:
+        status = os.popen('sudo /sbin/dmsetup status --target cache').readlines()
+        for s in status:
+            data = parse_dmsetup_status(s.rstrip())
+            for c in ['dirty']:
+                print('PUTVAL "%s/lvmcache-%s/bytes-%s" interval=%s N:%s' %
+                      (hostname, data['device'], c, interval, calculate_size(data, c)))
+            for c in ['metadata_used', 'metadata_free', 'cache_used', 'cache_free']:
+                print('PUTVAL "%s/lvmcache-%s/df_complex-%s" interval=%s N:%s' %
+                      (hostname, data['device'], c, interval, calculate_size(data, c)))
+            for c in ['read_hits', 'read_misses', 'write_hits', 'write_misses', 'demotions', 'promotions']:
+                print('PUTVAL "%s/lvmcache-%s/requests-%s" interval=%s N:%s' %
+                      (hostname, data['device'], c, interval, data[c]))
+        sys.stdout.flush()
+        time.sleep(interval)
+
+
+if __name__ == '__main__':
+    main()
