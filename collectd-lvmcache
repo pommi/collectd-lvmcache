@@ -36,6 +36,8 @@ def parse_dmsetup_status(line):
 def calculate_size(data, key):
     if key == 'metadata_free':
         value = data['metadata_total']-data['metadata_used']
+    elif key == 'cache_used':
+        value = data['cache_used']-data['dirty']
     elif key == 'cache_free':
         value = data['cache_total']-data['cache_used']-data['dirty']
     else:
