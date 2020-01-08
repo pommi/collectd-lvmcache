@@ -28,3 +28,11 @@ PUTVAL "hostname.tld/lvmcache-lv0/cache_result-write_misses" interval=1 N:294842
 PUTVAL "hostname.tld/lvmcache-lv0/cache_result-demotions" interval=1 N:0
 PUTVAL "hostname.tld/lvmcache-lv0/cache_result-promotions" interval=1 N:1806
 ```
+
+## Understanding the values
+
+For the terminology refer to the [kernel's cache documentation](https://www.kernel.org/doc/html/latest/admin-guide/device-mapper/cache.html).
+
+The values for `metadata_free`, `metadata_used`, `cache_free`, `cache_used` and `dirty` are multiplied with the blocksize, so the resulting unit is Bytes.
+
+The `cache_result` values are counters, so expect to use a derivative on them (e.g. if you use Grafana).
